@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">Pop Movies</string>
+    <string name="movie_detail_activity">Movie Detail</string>
+     <string name="error_message">
+        An error has occurred. Please try again.
+    </string>
+    <string name="network_msg">No Internet connection.</string>
+    <string name="popular">Most Popular</string>
+    <string name="top_rated">Top Rated</string>
+    <string name="value_popular">popular</string>
+    <string name="value_top_rated">top_rated</string>
+    <string name="favorites">mark as favorite</string>
+    <string name="action_settings">Settings</string>
+
+    <!-- Label for the sorting order preference [CHAR LIMIT=30] -->
+    <string name="pref_sorting_label">Sort By</string>
+
+    <!-- Label for popular movie option in sorting order preference [CHAR LIMIT=25] -->
+    <string name="pref_sorting_label_popularity">Popularity</string>
+
+    <!-- Label for rating option in sorting order preference [CHAR LIMIT=25] -->
+    <string name="pref_sorting_label_rating">Rating</string>
+    <!-- Label for favorite movies option in sorting order preference [CHAR LIMIT=25] -->
+    <string name="pref_sorting_label_favorite">Favorites </string>
+    <!-- Key name for sorting order preference in SharedPreferences [CHAR LIMIT=NONE] -->
+    <string name="pref_sorting_key" translatable="false">sorting</string>
+
+    <!-- Value in SharedPreferences for popular movie option [CHAR LIMIT=NONE] -->
+    <string name="pref_sorting_popularity" translatable="false">popular</string>
+
+    <!-- Value in SharedPreferences for rating option [CHAR LIMIT=NONE] -->
+    <string name="pref_sorting_rating" translatable="false">top_rated</string>
+    <!-- Value in SharedPreferences for favorite option [CHAR LIMIT=NONE] -->
+    <string name="pref_sorting_favorite" translatable="false">favorites</string>
+
+</resources>
