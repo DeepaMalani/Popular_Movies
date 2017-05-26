@@ -25,14 +25,13 @@ import com.example.android.popularmovies.data.MovieContract;
 
 import java.util.ArrayList;
 
-import static com.example.android.popularmovies.R.string.pref_sorting_favorite;
-
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor>, SharedPreferences.OnSharedPreferenceChangeListener {
 
     private static final String TAG = MainActivity.class.getSimpleName();
     private RecyclerView mRecyclerView;
     private MovieAdapter mMovieAdapter;
     private TextView mErrorMessageDisplay;
+    private int mPosition = RecyclerView.NO_POSITION;
     private String mSortBy;
     private String mSortByOnCallBacks = "";
     private static final String LIFECYCLE_CALLBACKS_TEXT_KEY = "callbacks";
@@ -161,7 +160,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     {
         //If device is rotated and shared preference is not change then FetchMoviesData will not execute.
         if(!mSortByOnCallBacks.equals(mSortBy)) {
-            if (!mSortBy.equals(pref_sorting_favorite)) {
+            if (!mSortBy.equals(getResources().getString(R.string.pref_sorting_favorite))) {
                 FetchMoviesData movieData = new FetchMoviesData(MainActivity.this);
                 movieData.execute(mSortBy);
             }
@@ -188,7 +187,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         Uri movieUri = MovieContract.MovieEntry.CONTENT_URI;
-        if (mSortBy.equals(R.string.pref_sorting_favorite))
+        if (mSortBy.equals(getResources().getString(R.string.pref_sorting_favorite)))
         {
             return new CursorLoader(MainActivity.this,
                     movieUri,
@@ -210,6 +209,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
      mMovieAdapter.swapCursor(data);
+        if (mPosition == RecyclerView.NO_POSITION) mPosition = 0;
+        mRecyclerView.smoothScrollToPosition(mPosition);
     }
 
     @Override

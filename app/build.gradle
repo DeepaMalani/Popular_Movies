@@ -18,7 +18,7 @@ android {
         }
     }
     buildTypes.each {
-        it.buildConfigField "String", 'movie_db_api_key', "\"Your_Api_key\""
+        it.buildConfigField "String", 'movie_db_api_key', "\"21129ccd694a516f78fb06c6fae5f076\""
     }
 }
 repositories {
