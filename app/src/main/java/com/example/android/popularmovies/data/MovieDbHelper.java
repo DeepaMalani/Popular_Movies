@@ -11,9 +11,9 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class MovieDbHelper  extends SQLiteOpenHelper {
 
     // If you change the database schema, you must increment the database version.
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 1;
 
-    static final String DATABASE_NAME = "movie.db";
+    static final String DATABASE_NAME = "movies.db";
 
     public MovieDbHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -31,14 +31,28 @@ public class MovieDbHelper  extends SQLiteOpenHelper {
                 MovieContract.MovieEntry.COLUMN_OVERVIEW + " TEXT NOT NULL, " +
                 MovieContract.MovieEntry.COLUMN_USER_RATING + " REAL NOT NULL, " +
                 MovieContract.MovieEntry.COLUMN_RELEASE_DATE + " TEXT NOT NULL, " +
-                MovieContract.MovieEntry.COLUMN_IMAGE_THUMBNAIL_PATH + " TEXT NOT NULL, " +
-                MovieContract.MovieEntry.COLUMN_IS_FAVORITE + " INTEGER NOT NULL, " +
+
 
                 // To assure the application have just one movie entry
                 // per movie id, it's created a UNIQUE constraint with REPLACE strategy
                 " UNIQUE (" + MovieContract.MovieEntry.COLUMN_MOVIE_ID + ") ON CONFLICT REPLACE);";
 
+        // Create a favorites table.
+        final String SQL_CREATE_FAVORITE_TABLE = "CREATE TABLE " + MovieContract.FavoriteMoviesEntry.TABLE_NAME + " (" +
+                MovieContract.FavoriteMoviesEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+                MovieContract.FavoriteMoviesEntry.COLUMN_MOVIE_ID + " INTEGER UNIQUE NOT NULL, " +
+                MovieContract.FavoriteMoviesEntry.COLUMN_POSTER_PATH + " TEXT NOT NULL, " +
+                MovieContract.FavoriteMoviesEntry.COLUMN_TITLE + " TEXT NOT NULL, " +
+                MovieContract.FavoriteMoviesEntry.COLUMN_OVERVIEW + " TEXT NOT NULL, " +
+                MovieContract.FavoriteMoviesEntry.COLUMN_USER_RATING + " REAL NOT NULL, " +
+                MovieContract.FavoriteMoviesEntry.COLUMN_RELEASE_DATE + " TEXT NOT NULL, " +
+
+                // To assure the application have just one movie entry
+                // per movie id, it's created a UNIQUE constraint with REPLACE strategy
+                " UNIQUE (" + MovieContract.FavoriteMoviesEntry.COLUMN_MOVIE_ID + ") ON CONFLICT REPLACE);";
+
         sqLiteDatabase.execSQL(SQL_CREATE_MOVIE_TABLE);
+        sqLiteDatabase.execSQL(SQL_CREATE_FAVORITE_TABLE);
     }
 
     //This will calls only when database version change.
@@ -46,6 +60,7 @@ public class MovieDbHelper  extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase sqLiteDatabase, int oldVersion, int newVersion) {
 
         sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + MovieContract.MovieEntry.TABLE_NAME);
+        sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + MovieContract.FavoriteMoviesEntry.TABLE_NAME);
         onCreate(sqLiteDatabase);
 
     }

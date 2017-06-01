@@ -67,17 +67,17 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
          */
         @Override
         public void onClick(View view) {
-            int adapterPosition = getAdapterPosition();
-            mCursor.moveToPosition(adapterPosition);
+
+            int adapterPosition = getAdapterPosition() ;
+            mCursor.moveToPosition(adapterPosition );
              long movieId = mCursor.getLong(MainActivity.INDEX_MOVIE_ID);
              String movieTitle =  mCursor.getString(MainActivity.INDEX_TITLE);
              String movieOverView = mCursor.getString(MainActivity.INDEX_OVERVIEW);
              double movieUserRating = mCursor.getDouble(MainActivity.INDEX_USER_RATING);
              String movieReleaseDate = mCursor.getString(MainActivity.INDEX_RELEASE_DATE);
-             String movieImageThumbNailPath = mCursor.getString(MainActivity.INDEX_IMAGE_THUMBNAIL_PATH);
              String moviePosterPath = mCursor.getString(MainActivity.INDEX_POSTER_PATH);
 
-            Movie movie = new Movie(movieId,moviePosterPath,movieTitle,movieOverView,movieUserRating,movieReleaseDate,movieImageThumbNailPath);
+            Movie movie = new Movie(movieId,moviePosterPath,movieTitle,movieOverView,movieUserRating,movieReleaseDate);
             mClickHandler.onClick(movie);
 
 

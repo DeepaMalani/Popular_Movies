@@ -3,6 +3,7 @@ package com.example.android.popularmovies;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -18,8 +19,8 @@ import android.support.v7.widget.RecyclerView;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.android.popularmovies.data.MovieContract;
 
@@ -39,13 +40,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private static final String[] MOVIE_COLUMNS = {
             MovieContract.MovieEntry._ID,
             MovieContract.MovieEntry.COLUMN_MOVIE_ID,
-            MovieContract.MovieEntry.COLUMN_MOVIE_SORT_BY,
             MovieContract.MovieEntry.COLUMN_POSTER_PATH,
             MovieContract.MovieEntry.COLUMN_TITLE,
             MovieContract.MovieEntry.COLUMN_OVERVIEW,
             MovieContract.MovieEntry.COLUMN_USER_RATING,
-            MovieContract.MovieEntry.COLUMN_RELEASE_DATE,
-            MovieContract.MovieEntry.COLUMN_IMAGE_THUMBNAIL_PATH
+            MovieContract.MovieEntry.COLUMN_RELEASE_DATE
+
     };
 
     /*
@@ -55,13 +55,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     */
     public static final int INDEX_ID = 0;
     public static final int INDEX_MOVIE_ID = 1;
-    public static final int INDEX_MOVIE_SORT_BY = 2;
-    public static final int INDEX_POSTER_PATH = 3;
-    public static final int INDEX_TITLE = 4;
-    public static final int INDEX_OVERVIEW = 5;
-    public static final int INDEX_USER_RATING = 6;
-    public static final int INDEX_RELEASE_DATE = 7;
-    public static final int INDEX_IMAGE_THUMBNAIL_PATH = 8;
+//    public static final int INDEX_MOVIE_SORT_BY = 2;
+    public static final int INDEX_POSTER_PATH = 2;
+    public static final int INDEX_TITLE = 3;
+    public static final int INDEX_OVERVIEW = 4;
+    public static final int INDEX_USER_RATING = 5;
+    public static final int INDEX_RELEASE_DATE = 6;
+
 
   @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,17 +87,21 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         /* This TextView is used to display errors and will be hidden if there are no errors */
         mErrorMessageDisplay = (TextView) findViewById(R.id.tv_error_message_display);
 
+      //Set recycler view number of column based on Orientation
+      int numberOfColumns ;
+      if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT){
+          numberOfColumns = 2;
+      }
+      else{
+          numberOfColumns = 3;
+      }
 
-        /*
-         * LinearLayoutManager can support HORIZONTAL or VERTICAL orientations. The reverse layout
-         * parameter is useful mostly for HORIZONTAL layouts that should reverse for right to left
-         * languages.
-         */
-        int numberOfColumns = 2;
+
         GridLayoutManager layoutManager
                 = new GridLayoutManager(MainActivity.this,numberOfColumns);
 
         mRecyclerView.setLayoutManager(layoutManager);
+
 
         /*
          * Use this setting to improve performance if you know that changes in content do not
@@ -120,17 +124,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 startActivity(intent);
             }
         });
-        Bundle bundleForLoader = null;
-        mSortBy = setupSharedPreferences();
-        Toast.makeText(MainActivity.this,mSortBy,Toast.LENGTH_SHORT).show();
-        getSupportLoaderManager().initLoader(MOVIES_LOADER_ID, null, MainActivity.this);
 
-      if(isOnline())
-           /* Once all of our views are setup, we can load the movie data. */
-          loadMovieData();
-      else {
-          showErrorMessage(getString(R.string.network_msg));
-      }
+        mSortBy = setupSharedPreferences();
+       getSupportLoaderManager().initLoader(MOVIES_LOADER_ID, null, MainActivity.this);
+
+      //Set activity label based on sort by
+      setActivityLabel(mSortBy);
 
     }
     private String setupSharedPreferences() {
@@ -141,7 +140,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         sortBy =sharedPreferences.getString(getString(R.string.pref_sorting_key),
                 getString(R.string.pref_sorting_popularity));
         sharedPreferences.registerOnSharedPreferenceChangeListener(this);
-       return  sortBy;
+        return  sortBy;
 
     }
         @Override
@@ -155,6 +154,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
    @Override
     protected void onStart() {
         super.onStart();
+       if(isOnline())
+           /* Once all of our views are setup, we can load the movie data. */
+           loadMovieData();
+       else {
+           showErrorMessage(getString(R.string.network_msg));
+       }
    }
     private void loadMovieData()
     {
@@ -186,17 +191,19 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        Uri movieUri = MovieContract.MovieEntry.CONTENT_URI;
+
         if (mSortBy.equals(getResources().getString(R.string.pref_sorting_favorite)))
         {
+            Uri favoritesUri = MovieContract.FavoriteMoviesEntry.CONTENT_URI;
             return new CursorLoader(MainActivity.this,
-                    movieUri,
-                    MOVIE_COLUMNS,
-                    MovieContract.MovieEntry.COLUMN_IS_FAVORITE + " = ?",
-                    new String[]{String.valueOf(MovieContract.FAVORITE_MOVIE) },
+                    favoritesUri,
+                    null,
+                    null,
+                    null,
                     null);
         }
         else {
+            Uri movieUri = MovieContract.MovieEntry.CONTENT_URI;
             return new CursorLoader(MainActivity.this,
                     movieUri,
                     MOVIE_COLUMNS,
@@ -211,6 +218,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
      mMovieAdapter.swapCursor(data);
         if (mPosition == RecyclerView.NO_POSITION) mPosition = 0;
         mRecyclerView.smoothScrollToPosition(mPosition);
+        if (data.getCount() != 0) showMovieDataView();
     }
 
     @Override
@@ -242,7 +250,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private void showMovieDataView() {
         /* First, make sure the error is invisible */
         mErrorMessageDisplay.setVisibility(View.INVISIBLE);
-        /* Then, make sure the weather data is visible */
+        /* Then, make sure the movie data is visible */
         mRecyclerView.setVisibility(View.VISIBLE);
     }
 
@@ -256,9 +264,19 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private void showErrorMessage(String message) {
         /* First, hide the currently visible data */
         mRecyclerView.setVisibility(View.INVISIBLE);
-        /* Then, show the error */
+        /* Then, show the error and refresh button*/
         mErrorMessageDisplay.setText(message);
         mErrorMessageDisplay.setVisibility(View.VISIBLE);
+        Button btnRefresh = (Button)findViewById(R.id.button_refresh);
+        btnRefresh.setVisibility(View.VISIBLE);
+        btnRefresh.setOnClickListener(new Button.OnClickListener()
+        {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MainActivity.this,MainActivity.class);
+                startActivity(intent);
+            }
+        });
     }
 
     @Override
@@ -271,5 +289,23 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
        loadMovieData();
        getSupportLoaderManager().restartLoader(MOVIES_LOADER_ID, null, MainActivity.this);
+       setActivityLabel(mSortBy);
+    }
+
+    private void setActivityLabel(String sortBy)
+    {
+        if (sortBy.equals(getString(R.string.pref_sorting_popularity)))
+       {
+        this.setTitle(getString(R.string.popular_movies));
+       }
+        else if(sortBy.equals(getString(R.string.pref_sorting_rating)))
+       {
+           this.setTitle(getString(R.string.top_rated_movies));
+       }
+        else if (sortBy.equals(getString(R.string.pref_sorting_favorite)))
+       {
+           this.setTitle(getString(R.string.favorite_movies));
+       }
+
     }
 }

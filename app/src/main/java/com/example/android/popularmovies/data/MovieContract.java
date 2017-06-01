@@ -20,10 +20,8 @@ public class MovieContract {
     // For instance, content://com.example.android.popularmovies.app/movie/ is a valid path for
 
     public static final String PATH_MOVIE = "movie";
+    public static final String PATH_FAVORITES = "favorites";
 
-    public static final  int FAVORITE_MOVIE = 1;
-
-    public static final int NOT_FAVORITE_MOVIE = 0;
 
     /* Inner class that defines the table contents of the movie table */
     public static final class MovieEntry implements BaseColumns {
@@ -67,11 +65,46 @@ public class MovieContract {
         // Date, stored as long in milliseconds since the epoch
         public static final String COLUMN_RELEASE_DATE = "release_date";
 
-        //Backdrop path(image thumbnail path)
-        public static final String COLUMN_IMAGE_THUMBNAIL_PATH = "image_thumbnail_path";
 
-        //Integer value to store favorite movie value,
-        //possible values are 0 or 1
-        public static final String COLUMN_IS_FAVORITE = "is_favorite";
     }
+
+    /* Inner class that defines the table contents of the movie table */
+    public static final class FavoriteMoviesEntry implements BaseColumns {
+
+        public static final Uri CONTENT_URI =
+                BASE_CONTENT_URI.buildUpon().appendPath(PATH_FAVORITES).build();
+
+        // These are special type prefixes that specify if a URI returns a list or a specific item
+        public static final String CONTENT_TYPE =
+                ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_FAVORITES;
+        public static final String CONTENT_ITEM_TYPE =
+                ContentResolver.CURSOR_ITEM_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/" + PATH_FAVORITES;
+
+
+        // Define a function to build a URI to find a specific movie by it's identifier
+        public static Uri buildMovieUri(long id){
+            return ContentUris.withAppendedId(CONTENT_URI, id);
+        }
+
+        public static final String TABLE_NAME = "favorites";
+
+
+        // Movie id as returned by API, to identify the video to be used
+        public static final String COLUMN_MOVIE_ID = "movie_id";
+
+        // Poster path of the movie, as provided by API.
+        public static final String COLUMN_POSTER_PATH = "poster_path";
+
+        // Movie title
+        public static final String COLUMN_TITLE = "original_title";
+        //Movie overview(A plot synopsis)
+        public static final String COLUMN_OVERVIEW = "overview";
+
+        //Vote average(user rating) of movie
+        public static final String COLUMN_USER_RATING = "user_rating";
+
+        // Date, stored as long in milliseconds since the epoch
+        public static final String COLUMN_RELEASE_DATE = "release_date";
+
+           }
 }

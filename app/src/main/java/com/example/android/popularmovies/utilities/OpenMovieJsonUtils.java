@@ -2,15 +2,12 @@ package com.example.android.popularmovies.utilities;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
 
 import com.example.android.popularmovies.data.MovieContract;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import static com.example.android.popularmovies.data.MovieContract.NOT_FAVORITE_MOVIE;
 
 /**
  * Utility functions to handle TheMovieDb JSON data.
@@ -40,7 +37,6 @@ public final class OpenMovieJsonUtils {
         final String MOVIE_OVERVIEW = "overview";
         final String MOVER_USER_RATING = "vote_average";
         final String MOVIE_RELEASE_DATE = "release_date";
-        final String MOVIE_IMAGE_THUMBNAIL = "backdrop_path";
         final String OWM_MESSAGE_CODE = "cod";
 
         JSONObject movieJson = new JSONObject(movieJsonStr);
@@ -55,7 +51,6 @@ public final class OpenMovieJsonUtils {
                 String overview;
                 double userRating;
                 String releaseDate;
-                String imageThumbnailPath;
 
                 // Get the JSON object representing the movie result
                 JSONObject resultMovie = movieArray.getJSONObject(i);
@@ -65,16 +60,11 @@ public final class OpenMovieJsonUtils {
                 overview = resultMovie.getString(MOVIE_OVERVIEW);
                 userRating = resultMovie.getDouble(MOVER_USER_RATING);
                 releaseDate = resultMovie.getString(MOVIE_RELEASE_DATE);
-                imageThumbnailPath = resultMovie.getString(MOVIE_IMAGE_THUMBNAIL);
 
                 final String IMAGE_BASE_URL = "http://image.tmdb.org/t/p/";
                 final String SIZE = "w185";
 
-                  //Check if is it favorite movie
-
-                  int isFavoriteMovie = checkFavoriteMovie(movieId,context);
-
-                  ContentValues movieValues = new ContentValues();
+                 ContentValues movieValues = new ContentValues();
                   movieValues.put(MovieContract.MovieEntry.COLUMN_MOVIE_ID, movieId);
                   movieValues.put(MovieContract.MovieEntry.COLUMN_MOVIE_SORT_BY,movieSortBy);
                   movieValues.put(MovieContract.MovieEntry.COLUMN_POSTER_PATH, IMAGE_BASE_URL + SIZE + posterPath);
@@ -82,29 +72,10 @@ public final class OpenMovieJsonUtils {
                   movieValues.put(MovieContract.MovieEntry.COLUMN_OVERVIEW, overview);
                   movieValues.put(MovieContract.MovieEntry.COLUMN_USER_RATING, userRating);
                   movieValues.put(MovieContract.MovieEntry.COLUMN_RELEASE_DATE, releaseDate);
-                  movieValues.put(MovieContract.MovieEntry.COLUMN_IMAGE_THUMBNAIL_PATH, IMAGE_BASE_URL + SIZE + imageThumbnailPath);
-                  movieValues.put(MovieContract.MovieEntry.COLUMN_IS_FAVORITE, isFavoriteMovie);
+
                   movieContentValues[i] = movieValues;
               }
               return  movieContentValues;
     }
-    private static int checkFavoriteMovie(long movieId, Context context)
-    {
-        int favoriteMovie = NOT_FAVORITE_MOVIE ;
 
-        // Check if the movie with this movie id exists in the db
-        Cursor movieCursor = context.getContentResolver().query(
-                MovieContract.MovieEntry.CONTENT_URI,
-                new String[]{MovieContract.MovieEntry.COLUMN_IS_FAVORITE},
-                MovieContract.MovieEntry.COLUMN_MOVIE_ID + " = ?",
-                new String[]{String.valueOf(movieId)},
-                null);
-
-        if (movieCursor.moveToFirst()) {
-            int favoriteMovieColumnIndex = movieCursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_IS_FAVORITE);
-            favoriteMovie = movieCursor.getInt(favoriteMovieColumnIndex);
-
-        }
-        return favoriteMovie;
-    }
 }

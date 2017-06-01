@@ -17,6 +17,8 @@ public class MovieProvider extends ContentProvider {
 
     static final int MOVIE = 100;
     static final int MOVIE_ID = 101;
+    static final int FAVORITE = 200;
+    static final int FAVORITE_ID = 201;
 
     private static final UriMatcher sUriMatcher = buildUriMatcher();
     private MovieDbHelper mOpenHelper;
@@ -38,6 +40,8 @@ public class MovieProvider extends ContentProvider {
         UriMatcher matcher = new UriMatcher(UriMatcher.NO_MATCH);
         matcher.addURI(content, MovieContract.PATH_MOVIE, MOVIE);
         matcher.addURI(content, MovieContract.PATH_MOVIE + "/#", MOVIE_ID);
+        matcher.addURI(content, MovieContract.PATH_FAVORITES, FAVORITE);
+        matcher.addURI(content, MovieContract.PATH_FAVORITES + "/#", FAVORITE_ID);
 
         return matcher;
     }
@@ -49,6 +53,11 @@ public class MovieProvider extends ContentProvider {
                 return MovieContract.MovieEntry.CONTENT_TYPE;
             case MOVIE_ID:
                 return MovieContract.MovieEntry.CONTENT_ITEM_TYPE;
+            case FAVORITE:
+                return MovieContract.FavoriteMoviesEntry.CONTENT_TYPE;
+            case FAVORITE_ID:
+                return MovieContract.FavoriteMoviesEntry.CONTENT_ITEM_TYPE;
+
 
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
@@ -84,6 +93,32 @@ public class MovieProvider extends ContentProvider {
                         null,
                         sortOrder
                 );
+                break;
+
+            case FAVORITE:
+                retCursor = db.query(
+                        MovieContract.FavoriteMoviesEntry.TABLE_NAME,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null,
+                        null,
+                        sortOrder
+                );
+                int countFavorites = retCursor.getCount();
+
+                break;
+            case FAVORITE_ID:
+                long _idFavorites = ContentUris.parseId(uri);
+                retCursor = db.query(
+                        MovieContract.FavoriteMoviesEntry.TABLE_NAME,
+                        projection,
+                        MovieContract.FavoriteMoviesEntry.COLUMN_MOVIE_ID + " = ?",
+                        new String[]{String.valueOf(_idFavorites)},
+                        null,
+                        null,
+                        sortOrder
+                );
 
                 break;
 
@@ -114,6 +149,14 @@ public class MovieProvider extends ContentProvider {
                     throw new UnsupportedOperationException("Unable to insert rows into: " + uri);
                 }
                 break;
+            case FAVORITE:
+                _id = db.insert(MovieContract.FavoriteMoviesEntry.TABLE_NAME, null, values);
+                if(_id > 0){
+                    returnUri = MovieContract.FavoriteMoviesEntry.buildMovieUri(_id);
+                } else{
+                    throw new UnsupportedOperationException("Unable to insert rows into: " + uri);
+                }
+                break;
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
@@ -131,6 +174,9 @@ public class MovieProvider extends ContentProvider {
         switch(sUriMatcher.match(uri)){
             case MOVIE:
                 rows = db.delete(MovieContract.MovieEntry.TABLE_NAME, selection, selectionArgs);
+                break;
+            case FAVORITE:
+                rows = db.delete(MovieContract.FavoriteMoviesEntry.TABLE_NAME, selection, selectionArgs);
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
@@ -153,6 +199,9 @@ public class MovieProvider extends ContentProvider {
 
             case MOVIE:
                 rows = db.update(MovieContract.MovieEntry.TABLE_NAME, values, selection, selectionArgs);
+                break;
+            case FAVORITE:
+                rows = db.update(MovieContract.FavoriteMoviesEntry.TABLE_NAME, values, selection, selectionArgs);
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
