@@ -3,25 +3,40 @@ package com.example.android.popularmovies;
 import android.content.ActivityNotFoundException;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.database.Cursor;
 import android.databinding.DataBindingUtil;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.android.popularmovies.data.MovieContract;
 import com.example.android.popularmovies.databinding.ActivityMovieDetailBinding;
+import com.example.android.popularmovies.utilities.NetworkUtils;
 import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -36,37 +51,50 @@ public class MovieDetail extends AppCompatActivity {
     //Declare loader Ids for trailers ans reviews
     private static final int TRAILERS_RESULT_LOADER_ID = 1;
     private static final int REVIEWS_RESULT_LOADER_ID = 2;
+    private ImageView mPoster;
+    private String mSortBy;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-       // setContentView(R.layout.activity_movie_detail);
 
         mMovieDetailBinding = DataBindingUtil.setContentView(this, R.layout.activity_movie_detail);
-
-
         Intent intent = getIntent();
-        if (intent != null && intent.hasExtra(Intent.EXTRA_TEXT)) {
-
+        if (intent != null && intent.hasExtra(Intent.EXTRA_TEXT) &&intent.hasExtra("SortBy")) {
+            //Retrieve Sort by
+            mSortBy = intent.getStringExtra("SortBy");
+            Log.d("SortBy",mSortBy);
             //Retrieve movie object
             mMovie = (Movie) intent.getParcelableExtra(Intent.EXTRA_TEXT);
             //Set Movie Title using databinding
             mMovieDetailBinding.textViewTitle.setText(mMovie.movieTitle);
-            //Set ThumbNail image
-            Picasso.with(MovieDetail.this).load(mMovie.moviePosterPath).into(mMovieDetailBinding.movieInfo.imageViewThumbnail);
+
             //Set Movie overview,release date and user rating text using data binding.
             mMovieDetailBinding.textViewOverview.setText(mMovie.movieOverView);
             mMovieDetailBinding.movieInfo.textViewReleaseDate.setText(getYearFromReleaseDate(mMovie.movieReleaseDate));
             mMovieDetailBinding.movieInfo.textViewUserRating.setText(String.valueOf(mMovie.movieUserRating)+ getResources().getString(R.string.ten_rating));
             setFavoriteButton();
+            mPoster = mMovieDetailBinding.movieInfo.imageViewThumbnail;
+
+            if(mSortBy.equals(getString(R.string.pref_sorting_favorite)))
+            {
+                loadImageFromStorage(mMovie.moviePosterPath);
+            }
+            else {
+                //Set ThumbNail image
+                Picasso.with(MovieDetail.this).load(mMovie.moviePosterPath).into(mMovieDetailBinding.movieInfo.imageViewThumbnail);
+            }
 
         }
 
-        // Prepare the loader.  Either re-connect with an existing one,
-        // or start a new one.
-        getSupportLoaderManager().initLoader(TRAILERS_RESULT_LOADER_ID, null, trailersResultLoaderListener);
-        getSupportLoaderManager().initLoader(REVIEWS_RESULT_LOADER_ID, null, reviewsResultLoaderListener);
-    }
+        //Check if there is internet connection or not
+        if(NetworkUtils.isOnline(MovieDetail.this)) {
+            // Prepare the loader.  Either re-connect with an existing one,
+            // or start a new one.
+            getSupportLoaderManager().initLoader(TRAILERS_RESULT_LOADER_ID, null, trailersResultLoaderListener);
+            getSupportLoaderManager().initLoader(REVIEWS_RESULT_LOADER_ID, null, reviewsResultLoaderListener);
+        }
 
+    }
     private LoaderManager.LoaderCallbacks<List<Trailer>> trailersResultLoaderListener;
     {
         trailersResultLoaderListener = new LoaderManager.LoaderCallbacks<List<Trailer>>()
@@ -249,9 +277,15 @@ public class MovieDetail extends AppCompatActivity {
 
     private void insertFavorites(Movie movie)
     {
+        Bitmap bitmap = ((BitmapDrawable) mPoster.getDrawable()).getBitmap();
+
+        String posterPath = saveToInternalStorage(bitmap,String.valueOf(movie.movieId));
+
+        Log.d("Image","Image saved @:" + posterPath);
+
         ContentValues favoritesValues = new ContentValues();
         favoritesValues.put(MovieContract.FavoriteMoviesEntry.COLUMN_MOVIE_ID, movie.movieId);
-        favoritesValues.put(MovieContract.FavoriteMoviesEntry.COLUMN_POSTER_PATH, movie.moviePosterPath);
+        favoritesValues.put(MovieContract.FavoriteMoviesEntry.COLUMN_POSTER_PATH, posterPath);
         favoritesValues.put(MovieContract.FavoriteMoviesEntry.COLUMN_TITLE, movie.movieTitle);
         favoritesValues.put(MovieContract.FavoriteMoviesEntry.COLUMN_OVERVIEW, movie.movieOverView);
         favoritesValues.put(MovieContract.FavoriteMoviesEntry.COLUMN_USER_RATING, movie.movieUserRating);
@@ -309,7 +343,7 @@ public class MovieDetail extends AppCompatActivity {
         }
        return releaseYear;
     }
-
+   //Create short movie review to display in review list.
     private String getShortMovieReview(String strReview)
     {
         int MAX_CHAR = 100;
@@ -318,4 +352,36 @@ public class MovieDetail extends AppCompatActivity {
 
         return review+ "..." + "\n";
     }
+    private String saveToInternalStorage(Bitmap bitmapImage,String movieId){
+        ContextWrapper cw = new ContextWrapper(MovieDetail.this);
+        // path to /data/data/yourapp/app_data/imageDir
+        File directory = cw.getDir("favoriteMoviesDir", Context.MODE_PRIVATE);
+        // Create imageDir
+        File mypath=new File(directory,movieId+".jpg");
+
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(mypath);
+            // Use the compress method on the BitMap object to write image to the OutputStream
+            bitmapImage.compress(Bitmap.CompressFormat.PNG, 100, fos);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                fos.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return mypath.getPath();
+    }
+
+    private void loadImageFromStorage(String path)
+    {
+       File file=new File(path);
+        Uri uri = Uri.fromFile(file);
+        Picasso.with(MovieDetail.this).load(uri).into(mPoster);
+
+    }
+
 }

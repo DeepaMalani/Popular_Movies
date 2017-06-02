@@ -55,7 +55,7 @@
             android:layout_height="wrap_content"
             android:text="@string/trailers"
             android:id="@+id/text_view_trailer_header"
-            android:visibility="visible"
+            android:visibility="gone"
             android:paddingLeft="16dp"
             android:layout_marginBottom="8dp"
             android:textSize="24sp"/>

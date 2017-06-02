@@ -2,6 +2,7 @@ package com.example.android.popularmovies;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.net.Uri;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,6 +11,7 @@ import android.widget.ImageView;
 
 import com.squareup.picasso.Picasso;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +24,8 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
     private Context mContex;
     private List<Movie> mMovies = new ArrayList<Movie>();
     private Cursor mCursor;
+    private String mSortBy;
+
 
     /*
      * An on-click handler that we've defined to make it easy for an Activity to interface with
@@ -29,10 +33,10 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
      */
     private static MovieAdapterOnClickHandler mClickHandler;
 
-    public MovieAdapter(Context context, List<Movie> movies) {
+    public MovieAdapter(Context context, List<Movie> movies,String sortBy) {
         mContex = context;
         mMovies = movies ;
-
+        mSortBy = sortBy;
     }
 
     // Define the method that allows the parent activity  to define the listener
@@ -101,11 +105,17 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
 
        mCursor.moveToPosition(position);
        String moviePosterPath = mCursor.getString(MainActivity.INDEX_POSTER_PATH);
-        Picasso
-                .with(mContex)
-                .load(moviePosterPath)
-                .fit() // will explain later
-                .into((ImageView) movieAdapterViewHolder.mMovieImageView);
+        if(mSortBy.equals(mContex.getString(R.string.pref_sorting_favorite)))
+        {
+            loadImageFromStorage(moviePosterPath,(ImageView) movieAdapterViewHolder.mMovieImageView);
+        }
+        else {
+            Picasso
+                    .with(mContex)
+                    .load(moviePosterPath)
+                    .fit() // will explain later
+                    .into((ImageView) movieAdapterViewHolder.mMovieImageView);
+        }
 
     }
 
@@ -136,8 +146,15 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
      *
      * @param newCursor the new cursor to use as ForecastAdapter's data source
      */
-    void swapCursor(Cursor newCursor) {
+    void swapCursor(Cursor newCursor,String sortBy) {
         mCursor = newCursor;
+        mSortBy = sortBy;
         notifyDataSetChanged();
+    }
+
+    private void loadImageFromStorage(String path,ImageView imageView) {
+        File file=new File(path);
+        Uri uri = Uri.fromFile(file);
+        Picasso.with(mContex).load(uri).resize(200, 230).into(imageView);
     }
 }

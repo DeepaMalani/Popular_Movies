@@ -1,12 +1,9 @@
 package com.example.android.popularmovies;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.Cursor;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
@@ -21,8 +18,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.android.popularmovies.data.MovieContract;
+import com.example.android.popularmovies.utilities.NetworkUtils;
 
 import java.util.ArrayList;
 
@@ -32,6 +31,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private RecyclerView mRecyclerView;
     private MovieAdapter mMovieAdapter;
     private TextView mErrorMessageDisplay;
+    private Button mButtonRefresh;
     private int mPosition = RecyclerView.NO_POSITION;
     private String mSortBy;
     private String mSortByOnCallBacks = "";
@@ -86,7 +86,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         /* This TextView is used to display errors and will be hidden if there are no errors */
         mErrorMessageDisplay = (TextView) findViewById(R.id.tv_error_message_display);
-
+        mButtonRefresh = (Button)findViewById(R.id.button_refresh);
+        mSortBy = setupSharedPreferences();
       //Set recycler view number of column based on Orientation
       int numberOfColumns ;
       if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT){
@@ -112,7 +113,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         /*
          * The MovieAdapter is responsible for linking our movie data with the Views.
          */
-        mMovieAdapter = new MovieAdapter(MainActivity.this,new ArrayList<Movie>());
+        mMovieAdapter = new MovieAdapter(MainActivity.this,new ArrayList<Movie>(),mSortBy);
 
         /* Setting the adapter attaches it to the RecyclerView in our layout. */
         mRecyclerView.setAdapter(mMovieAdapter);
@@ -121,13 +122,20 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             public void onClick(Movie movie) {
                 Intent intent = new Intent(MainActivity.this,MovieDetail.class);
                 intent.putExtra(Intent.EXTRA_TEXT,movie);
+                intent.putExtra("SortBy",mSortBy);
                 startActivity(intent);
             }
         });
 
-        mSortBy = setupSharedPreferences();
-       getSupportLoaderManager().initLoader(MOVIES_LOADER_ID, null, MainActivity.this);
 
+//      if (mSortBy.equals(getResources().getString(R.string.pref_sorting_favorite))) {
+//          getSupportLoaderManager().initLoader(MOVIES_LOADER_ID, null, MainActivity.this);
+//      }
+//      else {
+//          if (NetworkUtils.isOnline(MainActivity.this)) {
+//              getSupportLoaderManager().initLoader(MOVIES_LOADER_ID, null, MainActivity.this);
+//          }
+//      }
       //Set activity label based on sort by
       setActivityLabel(mSortBy);
 
@@ -154,21 +162,31 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
    @Override
     protected void onStart() {
         super.onStart();
-       if(isOnline())
+       Toast.makeText(MainActivity.this,"On start",Toast.LENGTH_LONG).show();
+       if (!mSortBy.equals(getResources().getString(R.string.pref_sorting_favorite))) {
+           if (NetworkUtils.isOnline(MainActivity.this)) {
+               getSupportLoaderManager().initLoader(MOVIES_LOADER_ID, null, MainActivity.this);
            /* Once all of our views are setup, we can load the movie data. */
-           loadMovieData();
+               loadMovieData();
+           }
+           else {
+               Toast.makeText(MainActivity.this,"Error",Toast.LENGTH_LONG).show();
+               showErrorMessage(getString(R.string.network_msg));
+           }
+       }
        else {
-           showErrorMessage(getString(R.string.network_msg));
+           getSupportLoaderManager().initLoader(MOVIES_LOADER_ID, null, MainActivity.this);
+           showMovieDataView();
        }
    }
     private void loadMovieData()
     {
         //If device is rotated and shared preference is not change then FetchMoviesData will not execute.
         if(!mSortByOnCallBacks.equals(mSortBy)) {
-            if (!mSortBy.equals(getResources().getString(R.string.pref_sorting_favorite))) {
+//            if (!mSortBy.equals(getResources().getString(R.string.pref_sorting_favorite))) {
                 FetchMoviesData movieData = new FetchMoviesData(MainActivity.this);
                 movieData.execute(mSortBy);
-            }
+           // }
         }
     }
     @Override
@@ -182,12 +200,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     }
 
-    public boolean isOnline() {
-        ConnectivityManager cm =
-                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo netInfo = cm.getActiveNetworkInfo();
-        return netInfo != null && netInfo.isConnectedOrConnecting();
-    }
+//    public boolean isOnline() {
+//        ConnectivityManager cm =
+//                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+//        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+//        return netInfo != null && netInfo.isConnectedOrConnecting();
+//    }
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
@@ -215,7 +233,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-     mMovieAdapter.swapCursor(data);
+     mMovieAdapter.swapCursor(data,mSortBy);
         if (mPosition == RecyclerView.NO_POSITION) mPosition = 0;
         mRecyclerView.smoothScrollToPosition(mPosition);
         if (data.getCount() != 0) showMovieDataView();
@@ -224,7 +242,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
 
-        mMovieAdapter.swapCursor(null);
+        mMovieAdapter.swapCursor(null,mSortBy);
     }
 
     @Override
@@ -248,8 +266,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 
     private void showMovieDataView() {
-        /* First, make sure the error is invisible */
+        /* First, make sure the error and refresh button is invisible */
         mErrorMessageDisplay.setVisibility(View.INVISIBLE);
+        mButtonRefresh.setVisibility(View.INVISIBLE);
         /* Then, make sure the movie data is visible */
         mRecyclerView.setVisibility(View.VISIBLE);
     }
@@ -267,14 +286,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         /* Then, show the error and refresh button*/
         mErrorMessageDisplay.setText(message);
         mErrorMessageDisplay.setVisibility(View.VISIBLE);
-        Button btnRefresh = (Button)findViewById(R.id.button_refresh);
-        btnRefresh.setVisibility(View.VISIBLE);
-        btnRefresh.setOnClickListener(new Button.OnClickListener()
+        mButtonRefresh.setVisibility(View.VISIBLE);
+        //Set refresh button click event
+        mButtonRefresh.setOnClickListener(new Button.OnClickListener()
         {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this,MainActivity.class);
-                startActivity(intent);
+                onStart();
             }
         });
     }

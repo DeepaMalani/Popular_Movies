@@ -19,14 +19,14 @@
         android:layout_height="wrap_content"
         android:padding="16dp"
         android:textSize="20sp"
-        android:visibility="gone"
+        android:visibility="invisible"
          />
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/refresh"
         android:id="@+id/button_refresh"
-        android:visibility="gone"
+        android:visibility="invisible"
         />
    </LinearLayout>
 
