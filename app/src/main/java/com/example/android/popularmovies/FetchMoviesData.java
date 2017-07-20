@@ -3,7 +3,6 @@ package com.example.android.popularmovies;
 import android.content.ContentValues;
 import android.content.Context;
 import android.os.AsyncTask;
-import android.util.Log;
 
 import com.example.android.popularmovies.data.MovieContract;
 import com.example.android.popularmovies.utilities.NetworkUtils;
@@ -25,7 +24,6 @@ public class FetchMoviesData extends AsyncTask<String, Void, Void> {
     @Override
     protected Void doInBackground(String... params) {
 
-        Log.d("Tag","FetchMoviesData");
         String sortBy = params[0];
         URL movieRequestUrl = NetworkUtils.buildUrl(sortBy,mContext);
 

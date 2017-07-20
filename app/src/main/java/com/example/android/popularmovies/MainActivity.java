@@ -17,8 +17,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.android.popularmovies.data.MovieContract;
 import com.example.android.popularmovies.utilities.NetworkUtils;
@@ -35,8 +35,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private int mPosition = RecyclerView.NO_POSITION;
     private String mSortBy;
     private String mSortByOnCallBacks = "";
+    private boolean mIsOnline = true;
     private static final String LIFECYCLE_CALLBACKS_TEXT_KEY = "callbacks";
     private static final int MOVIES_LOADER_ID = 0;
+    private ProgressBar mLoadingIndicator;
     private static final String[] MOVIE_COLUMNS = {
             MovieContract.MovieEntry._ID,
             MovieContract.MovieEntry.COLUMN_MOVIE_ID,
@@ -55,7 +57,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     */
     public static final int INDEX_ID = 0;
     public static final int INDEX_MOVIE_ID = 1;
-//    public static final int INDEX_MOVIE_SORT_BY = 2;
     public static final int INDEX_POSTER_PATH = 2;
     public static final int INDEX_TITLE = 3;
     public static final int INDEX_OVERVIEW = 4;
@@ -67,7 +68,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
 
       // If savedInstanceState is not null and contains LIFECYCLE_CALLBACKS_TEXT_KEY, set that text on our TextView
 
@@ -87,7 +87,16 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         /* This TextView is used to display errors and will be hidden if there are no errors */
         mErrorMessageDisplay = (TextView) findViewById(R.id.tv_error_message_display);
         mButtonRefresh = (Button)findViewById(R.id.button_refresh);
+ /*
+         * The ProgressBar that will indicate to the user that we are loading data. It will be
+         * hidden when no data is loading.
+        */
+      mLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loading_indicator);
+
+
+       // Set shared Preference.
         mSortBy = setupSharedPreferences();
+
       //Set recycler view number of column based on Orientation
       int numberOfColumns ;
       if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT){
@@ -128,14 +137,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         });
 
 
-//      if (mSortBy.equals(getResources().getString(R.string.pref_sorting_favorite))) {
-//          getSupportLoaderManager().initLoader(MOVIES_LOADER_ID, null, MainActivity.this);
-//      }
-//      else {
-//          if (NetworkUtils.isOnline(MainActivity.this)) {
-//              getSupportLoaderManager().initLoader(MOVIES_LOADER_ID, null, MainActivity.this);
-//          }
-//      }
+      getSupportLoaderManager().initLoader(MOVIES_LOADER_ID, null, MainActivity.this);
       //Set activity label based on sort by
       setActivityLabel(mSortBy);
 
@@ -162,20 +164,20 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
    @Override
     protected void onStart() {
         super.onStart();
-       Toast.makeText(MainActivity.this,"On start",Toast.LENGTH_LONG).show();
+
+       //Internet connection is not required for favorite movies.
        if (!mSortBy.equals(getResources().getString(R.string.pref_sorting_favorite))) {
-           if (NetworkUtils.isOnline(MainActivity.this)) {
-               getSupportLoaderManager().initLoader(MOVIES_LOADER_ID, null, MainActivity.this);
-           /* Once all of our views are setup, we can load the movie data. */
+           //Check internet connection.
+           mIsOnline=NetworkUtils.isOnline(MainActivity.this);
+           if (mIsOnline) {
+               /* Load the movie data if phone is connected to internet. */
                loadMovieData();
            }
            else {
-               Toast.makeText(MainActivity.this,"Error",Toast.LENGTH_LONG).show();
                showErrorMessage(getString(R.string.network_msg));
            }
        }
        else {
-           getSupportLoaderManager().initLoader(MOVIES_LOADER_ID, null, MainActivity.this);
            showMovieDataView();
        }
    }
@@ -183,10 +185,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     {
         //If device is rotated and shared preference is not change then FetchMoviesData will not execute.
         if(!mSortByOnCallBacks.equals(mSortBy)) {
-//            if (!mSortBy.equals(getResources().getString(R.string.pref_sorting_favorite))) {
-                FetchMoviesData movieData = new FetchMoviesData(MainActivity.this);
+            showLoading();
+            FetchMoviesData movieData = new FetchMoviesData(MainActivity.this);
                 movieData.execute(mSortBy);
-           // }
+        }
+        else
+        {
+            showMovieDataView();
         }
     }
     @Override
@@ -199,13 +204,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         super.onResume();
 
     }
-
-//    public boolean isOnline() {
-//        ConnectivityManager cm =
-//                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-//        NetworkInfo netInfo = cm.getActiveNetworkInfo();
-//        return netInfo != null && netInfo.isConnectedOrConnecting();
-//    }
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
@@ -234,9 +232,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
      mMovieAdapter.swapCursor(data,mSortBy);
-        if (mPosition == RecyclerView.NO_POSITION) mPosition = 0;
-        mRecyclerView.smoothScrollToPosition(mPosition);
-        if (data.getCount() != 0) showMovieDataView();
+        if (data.getCount() != 0 && mIsOnline)
+            showMovieDataView();
+
     }
 
     @Override
@@ -266,19 +264,31 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 
     private void showMovieDataView() {
+
+
         /* First, make sure the error and refresh button is invisible */
         mErrorMessageDisplay.setVisibility(View.INVISIBLE);
         mButtonRefresh.setVisibility(View.INVISIBLE);
+        mLoadingIndicator.setVisibility(View.INVISIBLE);
         /* Then, make sure the movie data is visible */
         mRecyclerView.setVisibility(View.VISIBLE);
+
     }
 
+    private void showLoading() {
+
+        /* Then, hide the weather data */
+        mRecyclerView.setVisibility(View.INVISIBLE);
+        mErrorMessageDisplay.setVisibility(View.INVISIBLE);
+        mButtonRefresh.setVisibility(View.INVISIBLE);
+        /* Finally, show the loading indicator */
+        mLoadingIndicator.setVisibility(View.VISIBLE);
+    }
+
+
     /**
-     * This method will make the error message visible and hide the weather
+     * This method will make the error message visible and hide the movie gridview
      * View.
-     * <p>
-     * Since it is okay to redundantly set the visibility of a View, we don't
-     * need to check whether each view is currently visible or invisible.
      */
     private void showErrorMessage(String message) {
         /* First, hide the currently visible data */
@@ -286,6 +296,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         /* Then, show the error and refresh button*/
         mErrorMessageDisplay.setText(message);
         mErrorMessageDisplay.setVisibility(View.VISIBLE);
+        mLoadingIndicator.setVisibility(View.INVISIBLE);
         mButtonRefresh.setVisibility(View.VISIBLE);
         //Set refresh button click event
         mButtonRefresh.setOnClickListener(new Button.OnClickListener()

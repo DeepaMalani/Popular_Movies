@@ -105,6 +105,7 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
 
        mCursor.moveToPosition(position);
        String moviePosterPath = mCursor.getString(MainActivity.INDEX_POSTER_PATH);
+        //For favorite movie load poster images from storage
         if(mSortBy.equals(mContex.getString(R.string.pref_sorting_favorite)))
         {
             loadImageFromStorage(moviePosterPath,(ImageView) movieAdapterViewHolder.mMovieImageView);
@@ -113,7 +114,7 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
             Picasso
                     .with(mContex)
                     .load(moviePosterPath)
-                    .fit() // will explain later
+                    .fit()
                     .into((ImageView) movieAdapterViewHolder.mMovieImageView);
         }
 
@@ -155,6 +156,6 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieAdapter
     private void loadImageFromStorage(String path,ImageView imageView) {
         File file=new File(path);
         Uri uri = Uri.fromFile(file);
-        Picasso.with(mContex).load(uri).resize(200, 230).into(imageView);
+        Picasso.with(mContex).load(uri).into(imageView);
     }
 }

@@ -8,12 +8,9 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.databinding.DataBindingUtil;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.Loader;
@@ -30,11 +27,8 @@ import com.example.android.popularmovies.data.MovieContract;
 import com.example.android.popularmovies.databinding.ActivityMovieDetailBinding;
 import com.example.android.popularmovies.utilities.NetworkUtils;
 import com.squareup.picasso.Picasso;
-import com.squareup.picasso.Target;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.DateFormat;
@@ -75,13 +69,14 @@ public class MovieDetail extends AppCompatActivity {
             setFavoriteButton();
             mPoster = mMovieDetailBinding.movieInfo.imageViewThumbnail;
 
+            //For favorite movies load poster image from internal storage.
             if(mSortBy.equals(getString(R.string.pref_sorting_favorite)))
             {
                 loadImageFromStorage(mMovie.moviePosterPath);
             }
             else {
-                //Set ThumbNail image
-                Picasso.with(MovieDetail.this).load(mMovie.moviePosterPath).into(mMovieDetailBinding.movieInfo.imageViewThumbnail);
+                //Else load image using poster image url.
+                Picasso.with(MovieDetail.this).load(mMovie.moviePosterPath).into(mPoster);
             }
 
         }
@@ -281,8 +276,6 @@ public class MovieDetail extends AppCompatActivity {
 
         String posterPath = saveToInternalStorage(bitmap,String.valueOf(movie.movieId));
 
-        Log.d("Image","Image saved @:" + posterPath);
-
         ContentValues favoritesValues = new ContentValues();
         favoritesValues.put(MovieContract.FavoriteMoviesEntry.COLUMN_MOVIE_ID, movie.movieId);
         favoritesValues.put(MovieContract.FavoriteMoviesEntry.COLUMN_POSTER_PATH, posterPath);
@@ -355,7 +348,7 @@ public class MovieDetail extends AppCompatActivity {
     private String saveToInternalStorage(Bitmap bitmapImage,String movieId){
         ContextWrapper cw = new ContextWrapper(MovieDetail.this);
         // path to /data/data/yourapp/app_data/imageDir
-        File directory = cw.getDir("favoriteMoviesDir", Context.MODE_PRIVATE);
+        File directory = cw.getDir(getString(R.string.favorite_movies_directory), Context.MODE_PRIVATE);
         // Create imageDir
         File mypath=new File(directory,movieId+".jpg");
 
@@ -378,7 +371,7 @@ public class MovieDetail extends AppCompatActivity {
 
     private void loadImageFromStorage(String path)
     {
-       File file=new File(path);
+        File file=new File(path);
         Uri uri = Uri.fromFile(file);
         Picasso.with(MovieDetail.this).load(uri).into(mPoster);
 

@@ -38,7 +38,6 @@ public class TrailerLoader extends AsyncTaskLoader<List<Trailer>> {
     @Override
     public List<Trailer> loadInBackground() {
 
-
         // These two need to be declared outside the try/catch
         // so that they can be closed in the finally block.
         HttpURLConnection urlConnection = null;
@@ -53,7 +52,7 @@ public class TrailerLoader extends AsyncTaskLoader<List<Trailer>> {
                     .appendQueryParameter(APPID_PARAM,BuildConfig.movie_db_api_key)
                     .build();
             URL url = new URL(builtUri.toString());
-            // Create the request to moviedb, and open the connection
+            // Create the request to api, and open the connection
             urlConnection = (HttpURLConnection) url.openConnection();
             urlConnection.setRequestMethod("GET");
             urlConnection.connect();
@@ -69,9 +68,6 @@ public class TrailerLoader extends AsyncTaskLoader<List<Trailer>> {
 
             String line;
             while ((line = reader.readLine()) != null) {
-                // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-                // But it does make debugging a *lot* easier if you print out the completed
-                // buffer for debugging.
                 buffer.append(line + "\n");
             }
 
@@ -81,11 +77,8 @@ public class TrailerLoader extends AsyncTaskLoader<List<Trailer>> {
             }
             videoJsonStr = buffer.toString();
             return getVideoDataFromJson(videoJsonStr);
-            // Log.v(LOG_TAG, "Movie JSON string: " + movieJsonStr);
         } catch (IOException e) {
             Log.e(LOG_TAG, "Error ", e);
-            // If the code didn't successfully get the weather data, there's no point in attempting
-            // to parse it.
             videoJsonStr = null;
         }catch (JSONException e) {
             Log.e(LOG_TAG, e.getMessage(), e);
@@ -110,12 +103,9 @@ public class TrailerLoader extends AsyncTaskLoader<List<Trailer>> {
     private List<Trailer> getVideoDataFromJson(String videoJsonStr)
             throws JSONException {
 
-
         // These are the names of the JSON objects that need to be extracted.
         final String RESULTS = "results";
         final String KEY = "key";
-        final String NAME = "name";
-
 
         try {
             JSONObject videoJson = new JSONObject(videoJsonStr);
@@ -131,14 +121,9 @@ public class TrailerLoader extends AsyncTaskLoader<List<Trailer>> {
                 JSONObject resultVideo = videoArray.getJSONObject(i);
                 key = resultVideo.getString(KEY);
                 name = String.format(mContext.getString(R.string.format_movie_trailer),i+1);
-                // name = resultVideo.getString(NAME);
-
                 trailers.add(new Trailer(key,name));
 
             }
-
-
-            Log.d(LOG_TAG, "FetchVideoData Complete.");
             mTrailers = trailers;
             return trailers;
 

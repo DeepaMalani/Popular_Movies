@@ -43,8 +43,6 @@ public class ReviewLoader extends AsyncTaskLoader<List<Review>> {
         String reviewJsonStr = null;
 
         try {
-            // Construct the URL for the themoviedb api
-            //https://api.themoviedb.org/3/discover/movie?sort_by=popularity.desc&api_key=21129ccd694a516f78fb06c6fae5f076
 
             final String MOVIE_BASE_URL = "https://api.themoviedb.org/3/movie/"+mMovieId+"/reviews?";
             final String SORT_PARAM = "sort_by";
@@ -53,10 +51,7 @@ public class ReviewLoader extends AsyncTaskLoader<List<Review>> {
                     .appendQueryParameter(APPID_PARAM, BuildConfig.movie_db_api_key)
                     .build();
             URL url = new URL(builtUri.toString());
-            // Log.v(LOG_TAG, "Built URI " + builtUri.toString());
-
-
-            // Create the request to moviedb, and open the connection
+            // Create the request to api, and open the connection
             urlConnection = (HttpURLConnection) url.openConnection();
             urlConnection.setRequestMethod("GET");
             urlConnection.connect();
@@ -72,9 +67,6 @@ public class ReviewLoader extends AsyncTaskLoader<List<Review>> {
 
             String line;
             while ((line = reader.readLine()) != null) {
-                // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-                // But it does make debugging a *lot* easier if you print out the completed
-                // buffer for debugging.
                 buffer.append(line + "\n");
             }
 
@@ -87,7 +79,7 @@ public class ReviewLoader extends AsyncTaskLoader<List<Review>> {
             // Log.v(LOG_TAG, "Movie JSON string: " + movieJsonStr);
         } catch (IOException e) {
             Log.e(LOG_TAG, "Error ", e);
-            // If the code didn't successfully get the weather data, there's no point in attempting
+            // If the code didn't successfully get the data, there's no point in attempting
             // to parse it.
             reviewJsonStr = null;
         }catch (JSONException e) {
@@ -139,8 +131,6 @@ public class ReviewLoader extends AsyncTaskLoader<List<Review>> {
 
             }
 
-
-            Log.d(LOG_TAG, "Fetch Reviews Complete.");
             mReviews = listReview;
             return listReview;
 
